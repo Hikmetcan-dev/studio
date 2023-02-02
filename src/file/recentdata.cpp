@@ -123,12 +123,16 @@ void RecentData::purgeEditor(QWidget *edit)
 
 FileMeta *RecentData::fileMeta() const
 {
-    return mMetaList.isEmpty() ? nullptr : mMetaList.last();
+    for (int i = mMetaList.size()-1 ; i >= 0 ; --i)
+        if (mMetaList.at(i)) return mMetaList.at(i);
+    return nullptr;
 }
 
 QWidget *RecentData::editor() const
 {
-    return mEditList.isEmpty() ? nullptr : mEditList.last();
+    for (int i = mMetaList.size()-1 ; i >= 0 ; --i)
+        if (mMetaList.at(i)) return mEditList.at(i);
+    return nullptr;
 }
 
 PExProjectNode *RecentData::project(bool skipGamsSystem) const

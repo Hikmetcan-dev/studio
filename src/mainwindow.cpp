@@ -451,7 +451,7 @@ void MainWindow::initWelcomePage()
 {
     mWp = new WelcomePage(this);
     connect(mWp, &WelcomePage::openFilePath, this, [this](const QString &filePath) {
-        openFilePath(filePath, nullptr, ogFindGroup, true);
+        openFilePath(filePath, nullptr, ogNone, true);
     });
     if (Settings::settings()->toBool(skSkipWelcomePage))
         mWp->hide();
