@@ -481,6 +481,7 @@ private:
     void goToLine(int result);
     QString readGucValue(QString key);
     void initCompleterActions();
+    PExFileNode *addIfSystemFile(const QString &filePath);
 
 private:
     Ui::MainWindow *ui;

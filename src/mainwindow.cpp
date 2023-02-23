@@ -3336,6 +3336,8 @@ PExFileNode* MainWindow::openFilePath(QString filePath, PExProjectNode* knownPro
 {
     if (!QFileInfo::exists(filePath))
         EXCEPT() << "File not found: " << filePath;
+    if (PExFileNode *node = addIfSystemFile(filePath))
+        return node;
 
     PExProjectNode *curProject = mRecent.project();
     PExProjectNode *project = knownProject;
@@ -4848,18 +4850,21 @@ bool MainWindow::readTabs(const QVariantMap &tabData)
             QVariantMap tabObject = tabArray.at(i).toMap();
             if (tabObject.contains("location")) {
                 QString location = tabObject.value("location").toString();
-                FileMeta *fm = mFileMetaRepo.fileMeta(location);
-                if (!fm) {
-                    skippedFiles << location;
-                    continue;
-                }
-                if (curTab == location) {
-                    tabStrategy = tabAtEnd;
-                    continue;
-                }
-                if (QFileInfo::exists(location)) {
-                    openFilePath(location, nullptr, ogFindGroup, false, false, tabStrategy);
-                    mOpenTabsList << location;
+                FileMeta *fm;
+                if (!addIfSystemFile(location)) {
+                    fm = mFileMetaRepo.fileMeta(location);
+                    if (!fm) {
+                        skippedFiles << location;
+                        continue;
+                    }
+                    if (curTab == location) {
+                        tabStrategy = tabAtEnd;
+                        continue;
+                    }
+                    if (QFileInfo::exists(location)) {
+                        openFilePath(location, nullptr, ogFindGroup, false, false, tabStrategy);
+                        mOpenTabsList << location;
+                    }
                 }
                 if (i % 10 == 0) QApplication::processEvents(QEventLoop::AllEvents, 1);
                 if (ui->mainTabs->count() <= i)
@@ -4867,16 +4872,23 @@ bool MainWindow::readTabs(const QVariantMap &tabData)
             }
         }
         for (const QString &file : qAsConst(skippedFiles)) {
-            if (file.compare(CommonPaths::defaultGamsUserConfigFile(), FileType::fsCaseSense()) == 0 ||
-                file.compare(CommonPaths::changelog(), FileType::fsCaseSense()) == 0   ) {
-                PExProjectNode *project = mProjectRepo.createProject("", "", "", onExist_Project, "", PExProjectNode::tGams);
-                PExFileNode *node = addNode("", file, project);
-                openFileNode(node);
-            }
+            addIfSystemFile(file);
         }
     }
     QTimer::singleShot(0, this, SLOT(initAutoSave()));
     return true;
+}
+
+PExFileNode *MainWindow::addIfSystemFile(const QString &filePath)
+{
+    if (filePath.compare(CommonPaths::defaultGamsUserConfigFile(), FileType::fsCaseSense()) == 0 ||
+        filePath.compare(CommonPaths::changelog(), FileType::fsCaseSense()) == 0) {
+        PExProjectNode *project = mProjectRepo.createProject("", "", "", onExist_Project, "", PExProjectNode::tGams);
+        PExFileNode *node = addNode("", filePath, project);
+        openFileNode(node);
+        return node;
+    }
+    return nullptr;
 }
 
 void MainWindow::writeTabs(QVariantMap &tabData) const
